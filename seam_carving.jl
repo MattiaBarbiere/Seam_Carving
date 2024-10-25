@@ -1,5 +1,6 @@
 using Images
 using ImageView
+using ProgressMeter
 
 #A function that calculates the average brightness of a pixel
 function brightness_of_pix(pixel::AbstractRGB)
@@ -96,8 +97,49 @@ function remove_seam(img, seam)
     final_size = (size(img)[1], size(img)[2]-1)
 
     #Preallocate space
-    result_img = Array{RGB}(undef, final_size)
+    result_img = Array{RGB{N0f8}}(undef, final_size)
+
+    #Iterate over the seam
+    for i in eachindex(seam)
+        if seam[i] > 1 && seam[i] < size(img)[2]
+            #Add the whole row without the pixel in the seam
+            result_img[i, :] = vcat(img[i, 1:seam[i]- 1], img[i, seam[i] + 1:end])
+
+        elseif seam[i] == 1
+            #Start from the second column
+            result_img[i, :] = img[i, 2:end]
+        elseif seam[i] == size(img)[2]
+            #Added everything except the last element
+            result_img[i, :] = img[i, 1: end - 1]
+        end
+    end
+
+    #Return the image that was created
+    return result_img
 end
+
+#The function that does seam carving over the columns
+function seam_carving_over_columns(img, final_res)
+    #Check that the resolution is possible
+    @assert final_res <= size(img)[2] && final_res > 0 "Resolution not valid"
+
+    #Init the variable
+    result_img = nothing
+
+    #Iterate (size(img)[2] - final_res) number of times
+    @showprogress dt=1 desc="Removing seams... " for _ in 1:size(img)[2] - final_res
+        #Get the energy image
+        energy_of_image = find_energy(img)
+        #Get the best seam
+        seam = get_seam(energy_of_image)
+        #Remove that seam
+        result_img = remove_seam(img, seam)
+    end
+
+    #Return the last image
+    return result_img
+end
+
 
 
 #A function that shows the location of the seam on the image
@@ -122,6 +164,7 @@ end
 
 #Testing 
 img = load("Tower.png")
+println("Size of the image: ", size(img))
 
 #Original Image
 # imshow(img)
@@ -145,6 +188,13 @@ img2 = display_seam(img, seam)
 #Finding and plotting the best seam
 best_seam = get_seam(energy)
 img3 = display_seam(img, seam)
-imshow(img3)
+# imshow(img3)
+
+#Reduce the number of columns
+img4 = seam_carving_over_columns(img, 1300)
+
+#Compare the images
+imshow(img)
+imshow(img4)
 
 println("Done")

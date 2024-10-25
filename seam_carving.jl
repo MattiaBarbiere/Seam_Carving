@@ -1,21 +1,6 @@
 using Images
 using ImageView
 
-#A function that shows the location of the seam on the image
-function display_seam(img, seam)
-    #Make a copy to the original image
-    display_img = copy(img)
-
-    #Iterate over the rows of pixels
-    for i in 1:size(img)[i]
-        #Change the colour of the i-th rows and the corresponding column in the seam
-        display_img[i, seam[i]] = RGB(1, 0.34, 0.2)
-    end
-
-    #Return the image
-    return display_img
-end
-
 #A function that calculates the average brightness of a pixel
 function brightness_of_pix(pixel::AbstractRGB)
     return sum([pixel.r, pixel.g, pixel.b])/3
@@ -74,6 +59,62 @@ function find_seam_paths(energy_of_image)
     return seam_paths, next_element_dir    
 end
 
+#Get the seam starting at a pixel in the top row 
+function get_seam(next_element_dir, start_column::Int)
+    #Making sure we have a valid column index
+    @assert (start_column <= size(next_element_dir)[2]) && (start_column >= 1) "Not a valid column index"
+
+    #Init the seam
+    seam = zeros(Int, size(next_element_dir)[1])
+
+    #Setting the first element
+    seam[1] = start_column
+
+    #Iterate over the rest of the rows
+    for i in 2:length(seam)
+        seam[i] = seam[i-1] + next_element_dir[i-1, seam[i-1]]
+    end
+
+    return seam
+end
+
+#Get the seam at the best starting column
+function get_seam(energy_of_image)
+    #Get the values from the find_seam_paths function
+    seam_paths, next_element_dir = find_seam_paths(energy_of_image)
+
+    #Get the best starting index
+    _, start_column = findmin(seam_paths[1, :])
+
+    #Start the seam at that point
+    return get_seam(next_element_dir, start_column)
+end
+
+#function that removes the seam from the image
+function remove_seam(img, seam)
+    #We remove one pixel from each row
+    final_size = (size(img)[1], size(img)[2]-1)
+
+    #Preallocate space
+    result_img = Array{RGB}(undef, final_size)
+end
+
+
+#A function that shows the location of the seam on the image
+function display_seam(img, seam)
+    #Make a copy to the original image
+    display_img = copy(img)
+
+    #Iterate over the rows of pixels
+    for i in 1:size(img)[1]
+        #Change the colour of the i-th rows and the corresponding column in the seam
+        display_img[i, seam[i]] = RGB(1, 0, 0)
+    end
+
+    #Return the image
+    return display_img
+end
+
 #A function to save a given image
 function save_image(img, file_name = "image")
     save(file_name * ".png", img)
@@ -95,5 +136,15 @@ seam_paths, next_element_dir = find_seam_paths(energy)
 
 #Show the next_element_dir
 # imshow(next_element_dir)
+
+#Show the seam with lowest energy starting from the 800 column
+seam = get_seam(next_element_dir, 800)
+img2 = display_seam(img, seam)
+# imshow(img2)
+
+#Finding and plotting the best seam
+best_seam = get_seam(energy)
+img3 = display_seam(img, seam)
+imshow(img3)
 
 println("Done")

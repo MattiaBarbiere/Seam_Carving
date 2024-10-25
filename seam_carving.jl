@@ -40,8 +40,8 @@ function find_seam_paths(energy_of_image)
     seam_paths[end, :] = energy_of_image[end, :]
 
     #Init the matrix that contains the direction of the lowest energy seam from each pixel
-    next_element_dir = zeros(Int64, size(energy_of_image))
-
+    next_element_dir = zeros(Int, size(energy_of_image))
+    
     #Dynamic programming step. We iterate from the bottom to the top starting from the second row
     for i in size(energy_of_image)[1]-1:-1:1
         #Iterate over columns
@@ -55,23 +55,23 @@ function find_seam_paths(energy_of_image)
             energy_of_lowest_energy_path, next_dir = findmin(seam_paths[i+1, [left, j, right]])
 
             #Update the seam_paths matrix. The energy of the lowest energy path from the pixel plus the energy of the pixel
-            seam_paths[i, j] = energy_of_shortest_path + energy_of_image[i, j]
+            seam_paths[i, j] = energy_of_lowest_energy_path + energy_of_image[i, j]
 
             #Update the direction matrix (left = -1, down = 0, right = 1). This helps since it tells us if the 
             #   column has to reduce by one (left), stay the same (down) or increase by one (right)
-            next_element_dir = next_dir - 2 
+            next_element_dir[i, j] = next_dir - 2 
 
             #Catch the case in which we are at the left edge
             if left == 1
                 #We add 1 since we take the min over only two elements so we need [1,2] -> [0, 1] instead of [1, 2] -> [-1, 0]
-                #   This is not a problem with the right edge as in that case [1, 2] -> [-1, 0] which is still valid
+                #   This is not a problem with the right edge as in that case [1, 2] -> [-1, 0] which is still correct
                 next_element_dir[i, j] += 1
             end
         end
     end
 
-
-    
+    #Return the two matricies
+    return seam_paths, next_element_dir    
 end
 
 #A function to save a given image
@@ -86,6 +86,14 @@ img = load("Tower.png")
 # imshow(img)
 
 #Energy of the image
+energy = find_energy(img)
 # imshow(find_energy(img))
+
+#Show the seam seam paths
+seam_paths, next_element_dir = find_seam_paths(energy)
+# imshow(seam_paths .* RGB(0.05, 0, 0.05))
+
+#Show the next_element_dir
+# imshow(next_element_dir)
 
 println("Done")

@@ -123,9 +123,6 @@ function seam_carving_over_columns(img, final_res)
     #Check that the resolution is possible
     @assert final_res <= size(img)[2] && final_res > 0 "Resolution not valid"
 
-    #Init the variable
-    result_img = nothing
-
     #Iterate (size(img)[2] - final_res) number of times
     @showprogress dt=1 desc="Removing seams... " for _ in 1:size(img)[2] - final_res
         #Get the energy image
@@ -133,14 +130,27 @@ function seam_carving_over_columns(img, final_res)
         #Get the best seam
         seam = get_seam(energy_of_image)
         #Remove that seam
-        result_img = remove_seam(img, seam)
+        img = remove_seam(img, seam)
     end
 
     #Return the last image
-    return result_img
+    return img
 end
 
+#Seam carving over the rows
+function seam_carving_over_rows(img, final_res)
+    #Check that the resolution is possible
+    @assert final_res <= size(img)[1] && final_res > 0 "Resolution not valid"
 
+    #Take the transpose
+    img_T = transpose(img)
+
+    #Run over the columns of the transpose
+    img_T = seam_carving_over_columns(img_T, final_res)
+
+    #Take the transpose again to get the original
+    return transpose(img_T)
+end
 
 #A function that shows the location of the seam on the image
 function display_seam(img, seam)
@@ -191,10 +201,16 @@ img3 = display_seam(img, seam)
 # imshow(img3)
 
 #Reduce the number of columns
-img4 = seam_carving_over_columns(img, 1300)
+img4 = seam_carving_over_columns(img, 900)
+img5 = seam_carving_over_rows(img, 600)
+
+println("Size of final image over columns ", size(img4))
+println("Size of final image over rows ", size(img5))
 
 #Compare the images
 imshow(img)
 imshow(img4)
+imshow(img5)
 
+#Making sure everything is done
 println("Done")
